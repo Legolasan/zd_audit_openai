@@ -45,7 +45,7 @@ ZENDESK_API_TOKEN=your_zendesk_api_token
 OPENAI_API_KEY=your_openai_api_key
 SERVICE_ACCOUNT_FILE=/path/to/your-google-service-account.json
 SPREADSHEET_ID=your_google_sheets_id
-SHEET_NAME=QC_OpenAI
+SHEET_NAME=worksheet_name
 ```
 ⚠️ DO NOT commit .env to GitHub to keep credentials secure.
 
