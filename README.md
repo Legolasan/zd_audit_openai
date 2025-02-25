@@ -13,7 +13,6 @@ This project automates the **evaluation of Zendesk support tickets** using **Ope
 ---
 
 ## 📂 Project Structure
-#### |---.env   
 #### |---main.py
 #### |---config.py
 #### |---zendesk_api.py
