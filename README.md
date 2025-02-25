@@ -17,6 +17,7 @@ This project automates the **evaluation of Zendesk support tickets** using **Ope
 #### |---config.py
 #### |---zendesk_api.py
 #### |---openai_analysis.py
+#### |---openai_prompt.py
 #### |---google_sheets.py
 #### |---requirements.txt
 #### |---README.md
