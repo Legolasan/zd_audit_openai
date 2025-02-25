@@ -79,7 +79,7 @@ def analyze_ticket_with_openai(ticket_id, ticket_subject, ticket_description, co
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4o",
-            messages=[{"role": "system", "content": "You are an AI support evaluator."},
+            messages=[{"role": "system", "content": "You are a Technical Support Engineer at Hevo. Your job is to analyze customer support tickets and ensure responses align with Hevo's customer support standards. Always return responses in strict JSON format."},
                       {"role": "user", "content": prompt}],
             max_tokens=1000,
             temperature=0.2
