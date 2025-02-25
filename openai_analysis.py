@@ -47,8 +47,8 @@ def analyze_ticket_with_openai(ticket_id, ticket_subject, ticket_description, co
             model="gpt-4o",
             messages=[{"role": "system", "content": "You are a technical support summarization assistant. Summarize the ticket interactions clearly in 2-3 sentences."},
                       {"role": "user", "content": summary_prompt}],
-            max_tokens=300,
-            temperature=0.3
+            max_tokens=1000,
+            temperature=0.2
         )
 
         summary_text = response_summary["choices"][0]["message"]["content"].strip()
