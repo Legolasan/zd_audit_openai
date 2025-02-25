@@ -64,3 +64,21 @@ def generate_ticket_analysis_prompt(ticket_id, ticket_subject, ticket_descriptio
         DO NOT INCLUDE MARKDOWN FORMATTING (```json ... ```) OR EXTRA TEXT.
     """
     return prompt
+def generate_ticket_summary_prompt(ticket_id, ticket_subject, ticket_description, comments):
+    """
+    Generates the OpenAI prompt to summarize a Zendesk ticket.
+    """
+    conversation_text = f"### Ticket ID: {ticket_id}\n### Subject: {ticket_subject}\n\n### Description:\n{ticket_description}\n\n"
+    conversation_text += "### Customer & Support Conversation:\n" + "\n".join([c["body"] for c in comments if "body" in c])
+
+    prompt = f"""
+        Summarize the following customer support ticket in **2-3 concise sentences**. 
+        Include the **main issue**, the **key interactions between customer & support**, and the **final resolution or pending status**.
+
+        {conversation_text}
+
+        ### **Expected Output Format**
+        "Summary": "The customer reported an issue with login failures due to an expired session. Support guided the user through clearing browser cache and resetting the password. The issue was resolved successfully."
+    """
+    return prompt
+

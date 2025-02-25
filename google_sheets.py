@@ -17,7 +17,7 @@ write_queue = queue.Queue()
 
 # Define the expected headers
 HEADERS = [
-    "Ticket ID", "SPOC", "Politeness & Professionalism", "Clarity of Responses",
+    "Ticket ID", "SPOC", "Summary", "Politeness & Professionalism", "Clarity of Responses",
     "Timeliness of Updates", "Proactive Communication", "Escalation Handling",
     "Asking the Right Questions", "Finding the Root Cause Timely", "Product Understanding",
     "Effective Troubleshooting Steps", "Workaround Provided", "Acknowledging Customer Impact",
@@ -25,37 +25,56 @@ HEADERS = [
     "Final Sentiment", "Areas of Improvement"
 ]
 
-# Function to check and write headers if missing
 def ensure_headers_exist():
     existing_data = sheet.get_all_values()
     if not existing_data or existing_data[0] != HEADERS:
         sheet.insert_row(HEADERS, 1)
         print("✅ Headers added to Google Sheets.")
 
-# Function to process queue and write to Google Sheets
 def process_write_queue():
+    global write_queue  # Ensure queue access
+
     while True:
         try:
             batch = []
             while not write_queue.empty():
-                batch.append(write_queue.get())
+                row = write_queue.get()
+                print("📝 Queued row for writing:", row)  # Debug log
+                batch.append(row)
 
             if batch:
-                ensure_headers_exist()  # Ensure headers are in place
-                sheet.append_rows(batch)  # Write in batch instead of multiple single writes
-                print(f"✅ {len(batch)} rows written to Google Sheets.")
+                ensure_headers_exist()  # Ensure headers exist
+                try:
+                    sheet.append_rows(batch)  # Write in batch
+                    print(f"✅ {len(batch)} rows written to Google Sheets.")
+                except gspread.exceptions.APIError as api_error:
+                    print(f"⚠️ Google Sheets API Error: {api_error.response.text}")  # Log API response
+                except Exception as e:
+                    print(f"❌ Unexpected Error while writing to Google Sheets: {e}")
 
-            time.sleep(2)  # Delay to avoid hitting API limits
+            time.sleep(2)  # Delay to avoid API rate limits
 
         except Exception as e:
-            print(f"⚠️ Error writing to Google Sheets: {e}")
+            print(f"⚠️ Error in write queue processing: {e}")
             time.sleep(5)  # Delay before retrying
+def wait_for_queue_to_empty(queue, timeout=120):
+    """
+    Waits for the queue to be empty within a given timeout period.
 
-# Start the write processing thread
-write_thread = threading.Thread(target=process_write_queue, daemon=True)
-write_thread.start()
+    Args:
+        queue (queue.Queue): The queue to monitor.
+        timeout (int): Maximum time to wait for the queue to empty (in seconds).
 
-# Function to queue data for writing
+    Returns:
+        bool: True if the queue is emptied within the timeout, False otherwise.
+    """
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        if queue.empty():
+            return True
+        time.sleep(1)  # Wait before checking again
+    return False
+
 def queue_write_to_google_sheets(results):
     """Queues results to be written to Google Sheets."""
     if not results:
@@ -63,13 +82,10 @@ def queue_write_to_google_sheets(results):
         return
 
     for result in results:
-        # Skip if the result is incomplete or has errors
-        if not result.get("Final Sentiment"):
-            print(f"⚠️ Skipping incomplete result for Ticket ID {result.get('Ticket ID', 'Unknown')}")
-            continue
         row = [
             result.get("Ticket ID", ""),
             result.get("SPOC", "Unknown"),
+            result.get("Summary", ""),  # Add the summary column
             result.get("Communication", {}).get("Politeness & Professionalism", ""),
             result.get("Communication", {}).get("Clarity of Responses", ""),
             result.get("Communication", {}).get("Timeliness of Updates", ""),
@@ -89,24 +105,4 @@ def queue_write_to_google_sheets(results):
         ]
         write_queue.put(row)
 
-    print(f"📌 {len(results)} rows added to write queue.")
-
-# Function to wait for the write queue to empty before exiting
-def wait_for_queue_to_empty(timeout=60):
-    """Wait for the write queue to empty before exiting.
-
-    Args:
-        timeout: Maximum time to wait in seconds
-
-    Returns:
-        bool: True if queue emptied, False if timed out
-    """
-    start_time = time.time()
-    while not write_queue.empty():
-        if time.time() - start_time > timeout:
-            return False
-        time.sleep(1)
-
-    # Give the thread a moment to finish processing
-    time.sleep(3)
-    return True
+    print(f"📌 {len(results)} valid rows added to write queue.")
