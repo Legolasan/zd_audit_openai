@@ -3,7 +3,8 @@ import time
 from datetime import datetime, timedelta, timezone
 from zendesk_api import fetch_tickets_for_spoc, fetch_ticket_comments, assignee_name
 from openai_analysis import analyze_ticket_with_openai
-from google_sheets import queue_write_to_google_sheets, process_write_queue, wait_for_queue_to_empty, write_queue
+from google_sheets import (queue_write_to_google_sheets, process_write_queue, write_queue,
+                           wait_for_queue_to_empty)
 
 
 def process_spoc(spoc_id, spoc_name, start_date):
@@ -57,7 +58,7 @@ def main():
     print("\n✅ All results added to queue. Writing to Google Sheets...")
 
     # Wait for the queue to empty before exiting
-    if wait_for_queue_to_empty(write_queue, timeout=120):
+    if wait_for_queue_to_empty(timeout=60):
         sheets_time = time.time() - sheets_start
         print(f"✅ All data successfully written to Google Sheets in {sheets_time:.2f} seconds")
     else:

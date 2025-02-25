@@ -25,15 +25,18 @@ HEADERS = [
     "Final Sentiment", "Areas of Improvement"
 ]
 
+
 def ensure_headers_exist():
+    """Ensures that the headers are present in the sheet."""
     existing_data = sheet.get_all_values()
+
     if not existing_data or existing_data[0] != HEADERS:
         sheet.insert_row(HEADERS, 1)
         print("✅ Headers added to Google Sheets.")
 
-def process_write_queue():
-    global write_queue  # Ensure queue access
 
+def process_write_queue():
+    """Continuously writes data from the queue to Google Sheets."""
     while True:
         try:
             batch = []
@@ -45,35 +48,24 @@ def process_write_queue():
             if batch:
                 ensure_headers_exist()  # Ensure headers exist
                 try:
-                    sheet.append_rows(batch)  # Write in batch
+                    sheet.append_rows(batch)  # Write batch data
                     print(f"✅ {len(batch)} rows written to Google Sheets.")
                 except gspread.exceptions.APIError as api_error:
                     print(f"⚠️ Google Sheets API Error: {api_error.response.text}")  # Log API response
                 except Exception as e:
                     print(f"❌ Unexpected Error while writing to Google Sheets: {e}")
 
-            time.sleep(2)  # Delay to avoid API rate limits
+            time.sleep(2)  # Avoid API rate limits
 
         except Exception as e:
             print(f"⚠️ Error in write queue processing: {e}")
             time.sleep(5)  # Delay before retrying
-def wait_for_queue_to_empty(queue, timeout=120):
-    """
-    Waits for the queue to be empty within a given timeout period.
 
-    Args:
-        queue (queue.Queue): The queue to monitor.
-        timeout (int): Maximum time to wait for the queue to empty (in seconds).
 
-    Returns:
-        bool: True if the queue is emptied within the timeout, False otherwise.
-    """
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        if queue.empty():
-            return True
-        time.sleep(1)  # Wait before checking again
-    return False
+# Start the write processing thread
+write_thread = threading.Thread(target=process_write_queue, daemon=True)
+write_thread.start()
+
 
 def queue_write_to_google_sheets(results):
     """Queues results to be written to Google Sheets."""
@@ -106,3 +98,23 @@ def queue_write_to_google_sheets(results):
         write_queue.put(row)
 
     print(f"📌 {len(results)} valid rows added to write queue.")
+
+
+def wait_for_queue_to_empty(timeout=60):
+    """Wait for the write queue to empty before exiting.
+
+    Args:
+        timeout: Maximum time to wait in seconds.
+
+    Returns:
+        bool: True if queue emptied, False if timed out.
+    """
+    start_time = time.time()
+    while not write_queue.empty():
+        if time.time() - start_time > timeout:
+            return False
+        time.sleep(1)
+
+    # Allow some time for final processing
+    time.sleep(3)
+    return True
